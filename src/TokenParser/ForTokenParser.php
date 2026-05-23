@@ -12,10 +12,13 @@
 
 namespace Twig\TokenParser;
 
+use Twig\Error\SyntaxError;
 use Twig\Node\Expression\ArrowFunctionExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\ListExpression;
+use Twig\Node\Expression\NameExpression;
 use Twig\Node\Expression\Variable\AssignContextVariable;
+use Twig\Node\Expression\Variable\ContextVariable;
 use Twig\Node\ForElseNode;
 use Twig\Node\ForNode;
 use Twig\Node\Node;
@@ -48,6 +51,10 @@ final class ForTokenParser extends AbstractTokenParser
         if ($stream->nextIf(Token::NAME_TYPE, 'if')) {
             $ifLine = $stream->getCurrent()->getLine();
             $ifExpr = $this->parser->parseExpression();
+
+            if ($this->referencesLoopVariable($ifExpr)) {
+                throw new SyntaxError('The "loop" variable cannot be used in a looping condition.', $lineno, $stream->getSourceContext());
+            }
 
             // filter() invokes the callback as ($value, $key) — match that order.
             if (\count($targets) > 1) {
@@ -110,5 +117,20 @@ final class ForTokenParser extends AbstractTokenParser
     public function getTag(): string
     {
         return 'for';
+    }
+
+    private function referencesLoopVariable(Node $node): bool
+    {
+        if (($node instanceof ContextVariable || $node instanceof NameExpression) && 'loop' === $node->getAttribute('name')) {
+            return true;
+        }
+
+        foreach ($node as $child) {
+            if ($this->referencesLoopVariable($child)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

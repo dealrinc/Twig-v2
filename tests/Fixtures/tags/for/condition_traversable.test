@@ -1,0 +1,12 @@
+--TEST--
+"for" tag condition works on a Traversable (iterator), not just arrays
+--TEMPLATE--
+{% for n in nums if n is odd -%}
+{{ n }}
+{% endfor %}
+--DATA--
+return ['nums' => new ArrayIterator([1, 2, 3, 4, 5])]
+--EXPECT--
+1
+3
+5

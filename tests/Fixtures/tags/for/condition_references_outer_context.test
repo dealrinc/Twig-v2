@@ -1,0 +1,12 @@
+--TEST--
+"for" tag condition can reference variables from the outer context
+--TEMPLATE--
+{% set threshold = 2 -%}
+{% for n in nums if n > threshold -%}
+{{ n }}
+{% endfor %}
+--DATA--
+return ['nums' => [1, 2, 3, 4]]
+--EXPECT--
+3
+4
