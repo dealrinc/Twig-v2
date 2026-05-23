@@ -12,10 +12,14 @@
 
 namespace Twig\TokenParser;
 
+use Twig\Node\Expression\ArrowFunctionExpression;
+use Twig\Node\Expression\FilterExpression;
+use Twig\Node\Expression\ListExpression;
 use Twig\Node\Expression\Variable\AssignContextVariable;
 use Twig\Node\ForElseNode;
 use Twig\Node\ForNode;
 use Twig\Node\Node;
+use Twig\Node\Nodes;
 use Twig\Token;
 
 /**
@@ -38,6 +42,36 @@ final class ForTokenParser extends AbstractTokenParser
         $targets = $this->parseAssignmentExpression();
         $stream->expect(Token::OPERATOR_TYPE, 'in');
         $seq = $this->parser->parseExpression();
+
+        // Restore the legacy "{% for x in seq if cond %}" syntax (removed in Twig 3.0)
+        // by desugaring into "{% for x in seq|filter(x => cond) %}".
+        if ($stream->nextIf(Token::NAME_TYPE, 'if')) {
+            $ifLine = $stream->getCurrent()->getLine();
+            $ifExpr = $this->parser->parseExpression();
+
+            // filter() invokes the callback as ($value, $key) — match that order.
+            if (\count($targets) > 1) {
+                $keyName = $targets->getNode('0')->getAttribute('name');
+                $valueName = $targets->getNode('1')->getAttribute('name');
+                $arrowParams = new ListExpression([
+                    new AssignContextVariable($valueName, $ifLine),
+                    new AssignContextVariable($keyName, $ifLine),
+                ], $ifLine);
+            } else {
+                $valueName = $targets->getNode('0')->getAttribute('name');
+                $arrowParams = new ListExpression([
+                    new AssignContextVariable($valueName, $ifLine),
+                ], $ifLine);
+            }
+
+            $arrow = new ArrowFunctionExpression($ifExpr, $arrowParams, $ifLine);
+            $seq = new FilterExpression(
+                $seq,
+                $this->parser->getEnvironment()->getFilter('filter'),
+                new Nodes([$arrow], $ifLine),
+                $ifLine
+            );
+        }
 
         $stream->expect(Token::BLOCK_END_TYPE);
         $body = $this->parser->subparse([$this, 'decideForFork']);

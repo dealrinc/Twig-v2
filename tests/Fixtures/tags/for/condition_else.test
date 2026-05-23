@@ -1,0 +1,10 @@
+--TEST--
+"for" tag legacy "if" condition triggers the {% else %} branch when nothing matches
+--TEMPLATE--
+{% for item in items if item > 10 %}{{ item }}
+{% else %}none
+{% endfor %}
+--DATA--
+return ['items' => [1, 2, 3]]
+--EXPECT--
+none

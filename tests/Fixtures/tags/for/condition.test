@@ -1,0 +1,14 @@
+--TEST--
+"for" tag supports a legacy "if" condition that filters the sequence
+--TEMPLATE--
+{% for item in items if item.active %}* {{ item.name }}
+{% endfor %}
+--DATA--
+return ['items' => [
+    ['name' => 'a', 'active' => true],
+    ['name' => 'b', 'active' => false],
+    ['name' => 'c', 'active' => true],
+]]
+--EXPECT--
+* a
+* c
