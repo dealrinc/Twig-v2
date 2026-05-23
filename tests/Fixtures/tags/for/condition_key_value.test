@@ -1,0 +1,11 @@
+--TEST--
+"for" tag condition works with key/value targets
+--TEMPLATE--
+{% for k, v in items if v > 1 -%}
+{{ k }}={{ v }}
+{% endfor %}
+--DATA--
+return ['items' => ['a' => 1, 'b' => 2, 'c' => 3]]
+--EXPECT--
+b=2
+c=3

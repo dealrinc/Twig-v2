@@ -1,0 +1,17 @@
+--TEST--
+"for" tag condition: loop.* variables work correctly inside the body
+
+In Twig 1.x/2.x the legacy implementation wrapped the body in an "if" so
+loop.last and loop.length could not be relied on (see the original
+loop_not_defined.test). The reintroduced implementation desugars to
+"seq|filter(...)", so the foreach iterates over the already-filtered
+sequence and loop.* reflects post-filter counts correctly.
+--TEMPLATE--
+{% for i, item in items if i > 0 -%}
+{{ i }}={{ item }} (last={{ loop.last ? 'y' : 'n' }}, length={{ loop.length }})
+{% endfor %}
+--DATA--
+return ['items' => ['a', 'b', 'c']]
+--EXPECT--
+1=b (last=n, length=2)
+2=c (last=y, length=2)

@@ -1,0 +1,15 @@
+--TEST--
+"for" tag conditions can be nested independently
+--TEMPLATE--
+{% for row in rows if row.show -%}
+[{% for n in row.nums if n is even %}{{ n }}{% endfor %}]
+{% endfor %}
+--DATA--
+return ['rows' => [
+    ['show' => true,  'nums' => [1, 2, 3, 4]],
+    ['show' => false, 'nums' => [5, 6]],
+    ['show' => true,  'nums' => [7, 8, 9, 10]],
+]]
+--EXPECT--
+[24]
+[810]
